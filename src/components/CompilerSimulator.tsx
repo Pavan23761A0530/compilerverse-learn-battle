@@ -65,7 +65,7 @@ const CompilerSimulator = () => {
   ];
 
   return (
-    <section id="simulator" className="py-20 px-4">
+    <section className="py-10 px-4">
       <div className="container mx-auto max-w-5xl">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-center neon-text mb-2">
