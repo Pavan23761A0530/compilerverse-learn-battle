@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Cpu, Play, Puzzle, Swords, Search, Trophy, LogOut, Zap } from "lucide-react";
-import { getCurrentPlayer, logoutPlayer } from "@/lib/score-manager";
+import { Cpu, Play, Puzzle, Swords, Search, Trophy, LogOut, Zap, Shield } from "lucide-react";
+import { getCurrentPlayer, getPlayerScores, logoutPlayer, isAdmin } from "@/lib/score-manager";
 
 const phases = ["Source Code", "Lexical", "Syntax", "Semantic", "IR", "Optimization", "Target Code"];
 
@@ -17,21 +17,17 @@ const menuItems = [
 const Home = () => {
   const navigate = useNavigate();
   const playerName = getCurrentPlayer();
+  const playerScores = getPlayerScores();
+  const admin = isAdmin();
 
-  useEffect(() => {
-    if (!playerName) navigate("/");
-  }, [playerName, navigate]);
+  useEffect(() => { if (!playerName) navigate("/"); }, [playerName, navigate]);
 
-  const handleLogout = () => {
-    logoutPlayer();
-    navigate("/");
-  };
+  const handleLogout = () => { logoutPlayer(); navigate("/"); };
 
   if (!playerName) return null;
 
   return (
     <div className="min-h-screen px-4 py-8">
-      {/* Header */}
       <div className="container mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-12">
           <Link to="/home" className="flex items-center gap-2 font-display text-lg font-bold text-primary">
@@ -39,8 +35,15 @@ const Home = () => {
           </Link>
           <div className="flex items-center gap-4">
             <span className="font-body text-sm text-muted-foreground">
+              <span className="text-xl mr-1">{playerScores?.avatar || "🤖"}</span>
               Welcome, <span className="text-primary font-semibold">{playerName}</span>
+              {playerScores && <span className="ml-2 text-neon-cyan font-display text-xs">⚡ {playerScores.total} pts</span>}
             </span>
+            {admin && (
+              <Link to="/admin" className="glass-card p-2 text-primary hover:text-neon-cyan transition-colors" title="Admin Panel">
+                <Shield className="w-4 h-4" />
+              </Link>
+            )}
             <button onClick={handleLogout} className="glass-card p-2 text-muted-foreground hover:text-destructive transition-colors" title="Logout">
               <LogOut className="w-4 h-4" />
             </button>
@@ -61,25 +64,14 @@ const Home = () => {
         </motion.div>
 
         {/* Pipeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-16"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-16">
           <p className="text-center text-xs font-display text-muted-foreground mb-4 tracking-widest uppercase">Compilation Pipeline</p>
           <div className="flex flex-wrap justify-center items-center gap-1 md:gap-0">
             {phases.map((phase, i) => (
-              <motion.div
-                key={phase}
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center"
-              >
-                <div className="glass-card px-3 py-2 text-xs font-mono-code font-semibold text-foreground animate-glow-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
-                  {phase}
-                </div>
+              <motion.div key={phase} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + i * 0.1 }} className="flex items-center">
+                <div className="glass-card px-3 py-2 text-xs font-mono-code font-semibold text-foreground animate-glow-pulse"
+                  style={{ animationDelay: `${i * 0.3}s` }}>{phase}</div>
                 {i < phases.length - 1 && <div className="hidden md:block w-6 h-0.5 pipeline-flow" />}
               </motion.div>
             ))}
@@ -89,16 +81,9 @@ const Home = () => {
         {/* Menu Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {menuItems.map((item, i) => (
-            <motion.div
-              key={item.path}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-            >
-              <Link
-                to={item.path}
-                className="glass-card-strong p-6 block group hover:border-primary/40 transition-all duration-300"
-              >
+            <motion.div key={item.path} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + i * 0.1 }}>
+              <Link to={item.path} className="glass-card-strong p-6 block group hover:border-primary/40 transition-all duration-300">
                 <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
                   {item.icon}
                 </div>
