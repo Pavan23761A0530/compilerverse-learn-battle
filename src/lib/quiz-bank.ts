@@ -180,11 +180,24 @@ export const ASSESSMENTS: QuizQuestion[][] = [
   ASSESSMENT_5,
 ];
 
-export function getAssessmentQuestions(idx: number): QuizQuestion[] {
-  const qs = [...ASSESSMENTS[idx]];
-  for (let i = qs.length - 1; i > 0; i--) {
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [qs[i], qs[j]] = [qs[j], qs[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return qs;
+  return a;
+}
+
+export function getAssessmentQuestions(idx: number): QuizQuestion[] {
+  // Shuffle question order AND option order per user attempt
+  return shuffle(ASSESSMENTS[idx]).map(q => {
+    const indexedOptions = q.options.map((opt, i) => ({ opt, isAnswer: i === q.answer }));
+    const shuffled = shuffle(indexedOptions);
+    return {
+      ...q,
+      options: shuffled.map(o => o.opt),
+      answer: shuffled.findIndex(o => o.isAnswer),
+    };
+  });
 }

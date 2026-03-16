@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Shield, Users, Trash2, RotateCcw, Power, PowerOff,
-  LogOut, Settings, Trophy, Cpu, UserX, RefreshCw, Pencil, X
+  LogOut, Settings, Trophy, Cpu, UserX, RefreshCw, Pencil, X,
+  BarChart3, Puzzle, Swords, Search
 } from "lucide-react";
 import {
   isAdmin, logoutPlayer, getPlayers, adminDeletePlayer, adminResetPlayerScore,
@@ -12,6 +13,23 @@ import {
   type PlayerScores, type AdminSettings
 } from "@/lib/score-manager";
 
+type Tab = "users" | "controls" | "analytics";
+
+function getSectionScore(p: PlayerScores, key: string): number {
+  if (key === "simulator") return p.simulator;
+  if (key === "phaseChallenge") return p.phaseChallenge;
+  if (key === "quiz") return p.quiz.reduce((a, b) => a + b, 0);
+  if (key === "errorDetective") return p.errorDetective;
+  return p.total;
+}
+
+const ANALYTICS_SECTIONS = [
+  { key: "simulator", label: "Simulator", icon: <Cpu className="w-4 h-4" /> },
+  { key: "phaseChallenge", label: "Phase Challenge", icon: <Puzzle className="w-4 h-4" /> },
+  { key: "quiz", label: "Quiz", icon: <Swords className="w-4 h-4" /> },
+  { key: "errorDetective", label: "Error Detective", icon: <Search className="w-4 h-4" /> },
+];
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<PlayerScores[]>([]);
@@ -19,17 +37,11 @@ const AdminDashboard = () => {
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editAvatar, setEditAvatar] = useState("");
-  const [tab, setTab] = useState<"users" | "controls">("users");
+  const [tab, setTab] = useState<Tab>("users");
 
-  useEffect(() => {
-    if (!isAdmin()) navigate("/");
-  }, [navigate]);
+  useEffect(() => { if (!isAdmin()) navigate("/"); }, [navigate]);
 
-  const refresh = () => {
-    setPlayers(getPlayers());
-    setSettings(getAdminSettings());
-  };
-
+  const refresh = () => { setPlayers(getPlayers()); setSettings(getAdminSettings()); };
   useEffect(refresh, []);
 
   const handleLogout = () => { logoutPlayer(); navigate("/"); };
@@ -37,26 +49,21 @@ const AdminDashboard = () => {
   const toggleQuiz = (idx: number) => {
     const s = { ...settings, quizActive: [...settings.quizActive] };
     s.quizActive[idx] = !s.quizActive[idx];
-    saveAdminSettings(s);
-    setSettings(s);
+    saveAdminSettings(s); setSettings(s);
   };
 
   const toggleFeature = (key: "phaseChallengeEnabled" | "errorDetectiveEnabled") => {
     const s = { ...settings, [key]: !settings[key] };
-    saveAdminSettings(s);
-    setSettings(s);
+    saveAdminSettings(s); setSettings(s);
   };
 
   const startEdit = (p: PlayerScores) => {
-    setEditingPlayer(p.name);
-    setEditName(p.name);
-    setEditAvatar(p.avatar);
+    setEditingPlayer(p.name); setEditName(p.name); setEditAvatar(p.avatar);
   };
 
   const saveEdit = (originalName: string) => {
     adminUpdatePlayer(originalName, { name: editName, avatar: editAvatar });
-    setEditingPlayer(null);
-    refresh();
+    setEditingPlayer(null); refresh();
   };
 
   return (
@@ -75,23 +82,22 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          <button onClick={() => setTab("users")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-display transition-all ${
-              tab === "users" ? "neon-btn" : "glass-card text-muted-foreground"
-            }`}>
-            <Users className="w-3 h-3" /> Users & Scores
-          </button>
-          <button onClick={() => setTab("controls")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-display transition-all ${
-              tab === "controls" ? "neon-btn" : "glass-card text-muted-foreground"
-            }`}>
-            <Settings className="w-3 h-3" /> Game Controls
-          </button>
+          {([
+            { key: "users" as Tab, icon: <Users className="w-3 h-3" />, label: "Users & Scores" },
+            { key: "controls" as Tab, icon: <Settings className="w-3 h-3" />, label: "Game Controls" },
+            { key: "analytics" as Tab, icon: <BarChart3 className="w-3 h-3" />, label: "Analytics" },
+          ]).map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-display transition-all ${
+                tab === t.key ? "neon-btn" : "glass-card text-muted-foreground"
+              }`}>
+              {t.icon} {t.label}
+            </button>
+          ))}
         </div>
 
         {tab === "users" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Bulk actions */}
             <div className="flex flex-wrap gap-2 mb-6">
               <button onClick={() => { if(confirm("Reset ALL scores?")) { adminResetAllScores(); refresh(); }}}
                 className="glass-card px-3 py-2 text-xs font-display text-muted-foreground hover:text-neon-orange transition-colors flex items-center gap-1.5">
@@ -111,7 +117,6 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            {/* Player list */}
             {players.length === 0 ? (
               <p className="text-center text-muted-foreground font-body text-sm">No registered users.</p>
             ) : (
@@ -171,7 +176,6 @@ const AdminDashboard = () => {
 
         {tab === "controls" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            {/* Quiz controls */}
             <div className="glass-card-strong p-6">
               <h3 className="font-display text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-primary" /> Quiz Assessments
@@ -192,7 +196,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Feature toggles */}
             <div className="glass-card-strong p-6">
               <h3 className="font-display text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <Settings className="w-4 h-4 text-primary" /> Game Modes
@@ -220,6 +223,59 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {tab === "analytics" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            {ANALYTICS_SECTIONS.map(sec => {
+              const scores = players.map(p => getSectionScore(p, sec.key));
+              const nonZero = scores.filter(s => s > 0);
+              const highest = scores.length > 0 ? Math.max(...scores) : 0;
+              const avg = nonZero.length > 0 ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
+              const attempts = nonZero.length;
+              const top5 = [...players]
+                .sort((a, b) => getSectionScore(b, sec.key) - getSectionScore(a, sec.key))
+                .slice(0, 5)
+                .filter(p => getSectionScore(p, sec.key) > 0);
+
+              return (
+                <div key={sec.key} className="glass-card-strong p-6">
+                  <h3 className="font-display text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                    {sec.icon} {sec.label}
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="glass-card p-3 text-center">
+                      <p className="text-[10px] font-display text-muted-foreground">Highest</p>
+                      <p className="font-display text-lg font-bold text-primary">{highest}</p>
+                    </div>
+                    <div className="glass-card p-3 text-center">
+                      <p className="text-[10px] font-display text-muted-foreground">Average</p>
+                      <p className="font-display text-lg font-bold text-neon-cyan">{avg}</p>
+                    </div>
+                    <div className="glass-card p-3 text-center">
+                      <p className="text-[10px] font-display text-muted-foreground">Attempts</p>
+                      <p className="font-display text-lg font-bold text-neon-orange">{attempts}</p>
+                    </div>
+                  </div>
+                  {top5.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-display text-muted-foreground uppercase tracking-widest mb-2">Top 5</p>
+                      <div className="space-y-1">
+                        {top5.map((p, i) => (
+                          <div key={p.name} className="flex items-center gap-2 text-xs font-body text-foreground">
+                            <span className="w-5 text-center font-display text-muted-foreground">{i + 1}</span>
+                            <span>{p.avatar}</span>
+                            <span className="flex-1 truncate">{p.name}</span>
+                            <span className="font-display text-primary font-bold">{getSectionScore(p, sec.key)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </motion.div>
         )}
       </div>
